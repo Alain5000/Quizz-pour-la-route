@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiz pour la route</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #171717;
+        color: #f5f5f5;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 16px; max-width: 560px; margin: 0 auto; -webkit-tap-highlight-color: transparent; user-select: none; }
+      h1 { font-size: 1.5rem; font-weight: 900; color: #f59e0b; margin: 4px 0 2px; }
+      .sub { font-size: 0.78rem; color: #a3a3a3; margin-bottom: 14px; }
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+      .chips button {
+        padding: 8px 14px; border-radius: 999px; font-size: 0.85rem; font-weight: 600;
+        border: 1px solid #404040; background: #262626; color: #d4d4d4; cursor: pointer;
+      }
+      .chips button.on { background: #f59e0b; color: #171717; border-color: #f59e0b; }
+      .card {
+        background: #262626; border-radius: 18px; padding: 22px; min-height: 240px;
+        display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,.4);
+      }
+      .counter { font-size: 0.72rem; color: #a3a3a3; margin-bottom: 10px; }
+      .q { font-size: 1.2rem; font-weight: 700; line-height: 1.35; flex: 1; }
+      .answer {
+        margin-top: 18px; padding: 14px 16px; border-radius: 12px;
+        background: #171717; border: 1px solid rgba(245,158,11,.45); font-size: 1.02rem;
+      }
+      .answer .lbl { display: block; font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; color: #f59e0b; margin-bottom: 4px; }
+      .reveal {
+        margin-top: 18px; padding: 15px; border: none; border-radius: 12px;
+        background: #f59e0b; color: #171717; font-size: 1.05rem; font-weight: 900; cursor: pointer;
+      }
+      .reveal:active { transform: scale(.96); }
+      .nav { display: flex; gap: 8px; margin-top: 14px; }
+      .nav button {
+        padding: 15px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 800; cursor: pointer;
+      }
+      .nav .prev { flex: 1; background: #262626; color: #e5e5e5; }
+      .nav .next { flex: 2; background: #f5f5f5; color: #171717; }
+      .nav button:active { transform: scale(.97); }
+      .shuffle {
+        width: 100%; margin-top: 10px; margin-bottom: 20px; padding: 12px;
+        background: none; border: 1px solid #404040; border-radius: 12px;
+        color: #a3a3a3; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🛣️ Quiz pour la route</h1>
+    <div class="sub" id="sub">…</div>
+    <div class="chips" id="chips"></div>
+    <div class="card">
+      <div class="counter" id="counter"></div>
+      <div class="q" id="q"></div>
+      <div id="answerBox"></div>
+    </div>
+    <div class="nav">
+      <button class="prev" onclick="prev()">← Précédent</button>
+      <button class="next" onclick="next()">Suivant →</button>
+    </div>
+    <button class="shuffle" onclick="reshuffle()">🔀 Mélanger les questions</button>
+
+    <script>
+      var QUESTIONS = [
+        { c: "rock", q: "Quel groupe a enregistré « Back in Black » (1980) après la mort de son chanteur, et de qui s'agissait-il ?", a: "AC/DC, après la mort de Bon Scott (remplacé par Brian Johnson)." },
+        { c: "rock", q: "Quel est le nom de naissance d'Ozzy Osbourne ?", a: "John Michael Osbourne." },
+        { c: "rock", q: "Metallica a été fondé en 1981 par Lars Ulrich et quel guitariste ?", a: "James Hetfield." },
+        { c: "rock", q: "Dans quel album (nommé uniquement par un symbole) figure « Stairway to Heaven » ?", a: "Led Zeppelin IV (1971), aussi appelé « Zoso » d'après les symboles des quatre membres." },
+        { c: "rock", q: "Quel groupe a sorti « Paranoid » en 1970, posant les bases du heavy metal ?", a: "Black Sabbath." },
+        { c: "rock", q: "Comment s'appelle la mascotte squelettique d'Iron Maiden, présente sur presque toutes les pochettes ?", a: "Eddie (Eddie the Head)." },
+        { c: "rock", q: "L'incendie d'un casino pendant un concert de Frank Zappa a inspiré quel classique de Deep Purple ?", a: "« Smoke on the Water » (Montreux, 1971)." },
+        { c: "rock", q: "Qui était le chanteur emblématique de Motörhead, décédé en 2015 ?", a: "Lemmy Kilmister (Ian Fraser Kilmister)." },
+        { c: "rock", q: "Quel est le vrai nom de Freddie Mercury ?", a: "Farrokh Bulsara." },
+        { c: "rock", q: "Quel alter ego androgyne David Bowie a-t-il incarné en 1972 ?", a: "Ziggy Stardust." },
+        { c: "rock", q: "Quel guitariste britannique a joué l'hymne américain déformé à Woodstock en 1969 ?", a: "Jimi Hendrix." },
+        { c: "rock", q: "Quel groupe est célèbre pour détruire ses instruments sur scène, notamment à Monterey Pop en 1967 ?", a: "The Who (Pete Townshend et sa guitare, Keith Moon et sa batterie)." },
+        { c: "rock", q: "Quel album de Pink Floyd, sorti en 1973, montre un prisme sur fond noir ?", a: "« The Dark Side of the Moon »." },
+        { c: "rock", q: "Quelle power ballad des Scorpions (1991) évoque la fin de la guerre froide et l'ouverture du rideau de fer ?", a: "« Wind of Change »." },
+        { c: "rock", q: "Quel est le surnom d'Eric Clapton, et quel trio a-t-il fondé en 1966 ?", a: "« Slowhand » ; il a fondé Cream." },
+        { c: "rock", q: "Dans quel groupe Kurt Cobain chantait-il avant sa mort en 1994 ?", a: "Nirvana." },
+        { c: "rock", q: "Quel album d'AC/DC de 1979 s'ouvre sur le titre « Highway to Hell » ?", a: "« Highway to Hell », le dernier avec Bon Scott." },
+        { c: "rock", q: "Quel chanteur aux tresses et chapeau haut de forme menait Guns N' Roses ?", a: "Axl Rose." },
+        { c: "rock", q: "Quel logo représente les Rolling Stones depuis 1971 ?", a: "La langue et les lèvres rouges (dessinées par John Pasche)." },
+        { c: "rock", q: "Quel groupe de Seattle, porté par Chris Cornell, sortait « Superunknown » en 1994 ?", a: "Soundgarden." },
+        { c: "harley", q: "Dans quelle ville américaine Harley-Davidson a-t-elle été fondée, et en quelle année ?", a: "Milwaukee, Wisconsin, en 1903." },
+        { c: "harley", q: "Quels sont les noms des fondateurs de Harley-Davidson ?", a: "William S. Harley, Arthur Davidson, Walter Davidson et William A. Davidson." },
+        { c: "harley", q: "Quel modèle de Harley a été massivement produit pour l'armée américaine pendant la Seconde Guerre mondiale ?", a: "La WLA (« Liberator »), environ 90 000 exemplaires." },
+        { c: "harley", q: "Quel moteur à culasse en forme de poings américains est apparu en 1936 ?", a: "Le Knucklehead (OHV V-twin de 61 ci)." },
+        { c: "harley", q: "Quel modèle emblématique a été lancé en 1957 et existe toujours ?", a: "Le Sportster." },
+        { c: "harley", q: "Pourquoi appelle-t-on les Harley des « Hogs » ?", a: "Des équipes de course des années 1920 (les « Hog Boys ») transportaient un cochon comme mascotte autour des pistes ; « hog » est resté le surnom des motos puis de la marque." },
+        { c: "harley", q: "Quelle firme américaine a possédé Harley-Davidson de 1969 à 1981, période réputée comme le creux de la qualité ?", a: "AMF (American Machine and Foundry)." },
+        { c: "harley", q: "Quel groupe de moteurs a remplacé le Shovelhead en 1984 ?", a: "L'Evolution (Evo)." },
+        { c: "harley", q: "Quel rassemblement de motards se tient chaque été dans une petite ville du Dakota du Sud depuis 1938 ?", a: "Le Sturgis Motorcycle Rally." },
+        { c: "harley", q: "Quel modèle fut popularisé par Arnold Schwarzenegger dans « Terminator 2 » (1991) ?", a: "La Fat Boy." },
+        { c: "cuisine", q: "Quelles sont les bases aromatiques d'une sauce béarnaise ?", a: "Échalotes, estragon, cerfeuil et vin blanc (montée au beurre et jaunes d'œufs)." },
+        { c: "cuisine", q: "Quel chef lyonnais, mort en 2018, a donné son nom à un prix culinaire international et a lancé la nouvelle cuisine ?", a: "Paul Bocuse." },
+        { c: "cuisine", q: "Que signifie « mise en place » dans une cuisine professionnelle ?", a: "La préparation et l'organisation de tous les ingrédients et ustensiles avant le service (« tout à sa place »)." },
+        { c: "cuisine", q: "Quelle épice est la plus chère au monde au kilo ?", a: "Le safran." },
+        { c: "cuisine", q: "Comment appelle-t-on la cinquième saveur de base, identifiée par le Japonais Kikunae Ikeda en 1908 ?", a: "L'umami (saveur « savoureuse », liée au glutamate)." },
+        { c: "cuisine", q: "De quoi est composé un roux blanc, base de la béchamel ?", a: "Beurre et farine cuits ensemble (puis lait ajouté)." },
+        { c: "cuisine", q: "Quelle pâte, à base de beurre bouillant et farine, sert aux choux, éclairs et religieuses ?", a: "La pâte à choux (inventée par Popelini, boulanger de Catherine de Médicis)." },
+        { c: "cuisine", q: "Quel tournedos classique se garnit d'une escalope de foie gras et de tranches de truffe ?", a: "Le tournedos Rossini." },
+        { c: "cuisine", q: "La tempura, star de la cuisine japonaise, a été introduite par quels navigateurs au XVIe siècle ?", a: "Les Portugais (missionnaires et marchands jésuites)." },
+        { c: "cuisine", q: "Quel chef anglais, célèbre pour ses sciences appliquées à la cuisine, tient The Fat Duck à Bray ?", a: "Heston Blumenthal." },
+        { c: "cuisine", q: "Que veut dire « cuire sous vide » à basse température ?", a: "Cuire un produit emballé sous vide dans un bain-marie à température basse et précise (souvent 55–65 °C) pendant de longues heures." },
+        { c: "cuisine", q: "Quelle sauce périgourdine accompagne traditionnellement les œufs et le foie gras, avec quel ingrédient phare ?", a: "La sauce périgueux, au jus de truffe (et échalotes, vin de Madère, demi-glace)." },
+        { c: "cuisine", q: "Quel fromage de Meaux, cousin du brie, est plus petit et plus épais ?", a: "Le coulommiers." },
+        { c: "cuisine", q: "Dans quel ordre classique mange-t-on les fromages d'un plateau selon les puristes ?", a: "Du plus doux au plus fort (pour ne pas masquer les saveurs)." },
+        { c: "cuisine", q: "Quelle préparation espagnole de riz safrané doit son nom à sa poêle spécifique ?", a: "La paella, de « paella », la poêle plate à deux anses (à l'origine de Valence)." },
+        { c: "alcool", q: "Combien de temps minimum un scotch whisky doit-il vieillir en fût ?", a: "Trois ans (pour porter le nom de Scotch)." },
+        { c: "alcool", q: "Quelle baie est l'ingrédient obligatoire du gin ?", a: "La baie de genièvre." },
+        { c: "alcool", q: "De quelle plante et de quelle région provient la tequila ?", a: "De l'agave bleu (Weber), cultivé autour de Jalisco au Mexique." },
+        { c: "alcool", q: "Quelle méthode de prise de mousse définit le champagne ?", a: "La méthode traditionnelle : seconde fermentation en bouteille, avec dégorgement." },
+        { c: "alcool", q: "Quelles plantes anisées parfument le pastis ?", a: "L'anis vert et/ou la badiane (anis étoilé), avec réglisse en complément." },
+        { c: "alcool", q: "Quelle est la différence entre rhum agricole et rhum industriel ?", a: "L'agricole est distillé à partir de jus de canne frais (vesou), l'industriel à partir de mélasse." },
+        { c: "alcool", q: "Que signifie IPA, et d'où vient cette bière ?", a: "India Pale Ale : une ale fortement houblonnée brassée en Angleterre pour survivre au voyage vers l'Inde." },
+        { c: "alcool", q: "Quelle céréale doit composer au moins 51 % du bourbon ?", a: "Le maïs." },
+        { c: "alcool", q: "Quels sont les trois ingrédients d'un Negroni ?", a: "Gin, Campari et vermouth rouge (1/3, 1/3, 1/3)." },
+        { c: "alcool", q: "Combien de distillations subit traditionnellement le whiskey irlandais, contrairement au scotch ?", a: "Trois distillations (contre deux pour la plupart des scotchs)." },
+        { c: "alcool", q: "Quel cru de cognac est considéré comme le plus prestigieux ?", a: "La Grande Champagne (petite Champagne juste après)." },
+        { c: "alcool", q: "Quelle est la différence entre « single malt » et « blended » whisky ?", a: "Le single malt provient d'une seule distillerie et d'orge maltée ; le blended est un assemblage de whiskys de malt et de grain." },
+        { c: "alcool", q: "Quelle fée verte, interdite en France en 1915, a été réautorisée (avec limitations de thuyone) à partir de 1988–2011 ?", a: "L'absinthe." },
+        { c: "alcool", q: "Citez les cinq ingrédients d'un mojito.", a: "Rhum, citron vert, sucre de canne (ou sirop), menthe fraîche et eau gazeuse." },
+        { c: "alcool", q: "Quelle est la particularité du saké face au vin ?", a: "C'est une bière de riz : l'amidon du riz est converti en sucres par un champignon (koji) puis fermenté — double processus en parallèle." },
+        { c: "rigolade", q: "Je suis plein de trous mais je retiens l'eau. Qui suis-je ?", a: "Une éponge." },
+        { c: "rigolade", q: "J'ai des dents mais je ne mords jamais. Qui suis-je ?", a: "Un peigne (ou une fourchette)." },
+        { c: "rigolade", q: "Plus je sèche, plus je deviens mouillée. Qui suis-je ?", a: "Une serviette." },
+        { c: "rigolade", q: "J'ai un cou mais pas de tête. Qui suis-je ?", a: "Une bouteille." },
+        { c: "rigolade", q: "Qu'est-ce qui monte et descend sans bouger ?", a: "Un escalier." },
+        { c: "rigolade", q: "Trois machines prennent trois minutes pour fabriquer trois pièces. Combien de temps pour 100 machines et 100 pièces ?", a: "Trois minutes ! (Chaque machine fait une pièce en 3 minutes, le tout en parallèle.)" },
+        { c: "rigolade", q: "Que dit un escargot quand il croise une limace ?", a: "« Regarde, un nudiste ! »" },
+        { c: "rigolade", q: "Pourquoi les plongeurs plongent-ils toujours en arrière et jamais en avant ?", a: "Parce que sinon ils tombent dans le bateau." },
+        { c: "rigolade", q: "Quel est le comble pour un électricien ?", a: "De ne pas être au courant." },
+        { c: "rigolade", q: "Quelle est la suite : 1, 11, 21, 1211, … ?", a: "1112 21 … Chaque terme « lit » le précédent : 1 ; « un 1 » (11) ; « deux 1 » (21) ; « un 2, un 1 » (1211)…" },
+        { c: "rigolade", q: "Un train TGV part de Paris à 200 km/h. Dans quel sens part la fumée ?", a: "Le TGV est électrique : il n'y a pas de fumée !" },
+        { c: "rigolade", q: "On me jette quand on a besoin de moi et on me reprend quand on n'a plus besoin. Qui suis-je ?", a: "Une bouée (ou une ancre de marine)." },
+        { c: "rigolade", q: "Deux pères et deux fils pêchent chacun un poisson, mais seulement trois poissons sont pris. Comment est-ce possible ?", a: "Il n'y a que trois personnes : le grand-père, le père et le fils (le père étant à la fois fils et père)." },
+        { c: "rigolade", q: "Qu'est-ce qui traverse les vitres sans jamais les casser ?", a: "La lumière." },
+        { c: "culture", q: "Quelle est la capitale de l'Australie ?", a: "Canberra (choisie comme compromis entre Sydney et Melbourne)." },
+        { c: "culture", q: "Quel est le plus haut sommet hors de l'Himalaya ?", a: "L'Aconcagua, en Argentine (6 961 m)." },
+        { c: "culture", q: "Quel est le pays le plus peuplé d'Afrique ?", a: "Le Nigeria." },
+        { c: "culture", q: "En quelle année le mur de Berlin est-il tombé ?", a: "Le 9 novembre 1989." },
+        { c: "culture", q: "Combien d'années a réellement duré la guerre de Cent Ans ?", a: "116 ans (1337 à 1453)." },
+        { c: "culture", q: "Pour quelles découvertes Einstein a-t-il reçu le prix Nobel de physique en 1921 ?", a: "Pour l'explication de l'effet photoélectrique, pas pour la relativité." },
+        { c: "culture", q: "Quel élément chimique a pour symbole « W » ?", a: "Le tungstène (wolfram)." },
+        { c: "culture", q: "Quelle est la vitesse de la lumière dans le vide (arrondie) ?", a: "Environ 299 792 km/s (300 000 arrondi)." },
+        { c: "culture", q: "Dans quelle fosse se trouve le point le plus profond des océans, et dans quel océan ?", a: "La fosse des Mariannes (Challenger Deep), dans l'océan Pacifique." },
+        { c: "culture", q: "Quel compositeur est devenu complètement sourd tout en continuant à écrire des chefs-d'œuvre ?", a: "Beethoven." },
+        { c: "culture", q: "À quelle bataille Napoléon a-t-il été définitivement vaincu, et en quelle année ?", a: "Waterloo, le 18 juin 1815." },
+        { c: "culture", q: "Depuis quel appel radiodiffusé De Gaulle appelle-t-il les Français à continuer le combat ?", a: "L'appel du 18 juin 1940, depuis Londres (BBC)." },
+        { c: "culture", q: "Dans quel pays se trouve le kilimandjaro ?", a: "La Tanzanie." },
+        { c: "culture", q: "Quel est le point le plus bas des terres émergées ?", a: "Les rives de la mer Morte, environ −430 m." },
+        { c: "culture", q: "Combien de fuseaux horaires couvre la France avec ses territoires ultramarins ?", a: "12 fuseaux horaires (record mondial)." },
+        { c: "culture", q: "Qui a écrit « Le Procès » et « La Métamorphose » ?", a: "Franz Kafka." },
+        { c: "culture", q: "Quelle peinture a été vendue environ 450 millions de dollars en 2017, record absolu ?", a: "« Salvator Mundi », attribuée à Léonard de Vinci." },
+        { c: "culture", q: "Quelle est la langue maternelle la plus parlée au monde ?", a: "Le mandarin (chinois), environ 900 millions de locuteurs natifs." },
+        { c: "culture", q: "Qui a inauguré la route maritime vers l'Inde en contournant le cap de Bonne-Espérance en 1498 ?", a: "Vasco de Gama." },
+        { c: "culture", q: "Quelle scientifique a reçu deux prix Nobel dans deux disciplines différentes ?", a: "Marie Curie (physique 1903, chimie 1911)." },
+        { c: "culture", q: "Quel héros d'Alexandre Dumas se venge sous l'identité d'un aristocrate richissime ?", a: "Edmond Dantès, le comte de Monte-Cristo." },
+        { c: "culture", q: "Quel peintre russe est considéré comme le pionnier de l'abstraction pure ?", a: "Wassily Kandinsky." },
+        { c: "culture", q: "Quand la Joconde a-t-elle été volée au Louvre, rendant Vinci célèbre du jour au lendemain ?", a: "En 1911 (retrouvée en 1913 ; le voleur était Vincenzo Peruggia)." },
+        { c: "culture", q: "Quel pays a inventé le papier (et donc le papier toilette) ?", a: "La Chine (le papier au IIe siècle, le papier toilette au VIe siècle)." },
+        { c: "culture", q: "Quel est le plus grand désert du monde ?", a: "L'Antarctique (désert polaire) ; le Sahara est le plus grand désert chaud." }
+      ];
+
+      var CATS = [
+        { id: "all", label: "Tout" },
+        { id: "rock", label: "🎸 Rock" },
+        { id: "harley", label: "🏍️ Harley" },
+        { id: "cuisine", label: "👨‍🍳 Cuisine" },
+        { id: "alcool", label: "🍺 Alcool" },
+        { id: "rigolade", label: "😂 Rigolade" },
+        { id: "culture", label: "🌍 Culture" }
+      ];
+
+      var cat = "all", list = [], idx = 0, revealed = false;
+
+      function shuffle(a) {
+        a = a.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+        return a;
+      }
+
+      function filtered() {
+        return cat === "all" ? QUESTIONS : QUESTIONS.filter(function (x) { return x.c === cat; });
+      }
+
+      function buildChips() {
+        var el = document.getElementById("chips");
+        el.innerHTML = "";
+        CATS.forEach(function (c) {
+          var b = document.createElement("button");
+          b.textContent = c.label;
+          if (c.id === cat) b.className = "on";
+          b.onclick = function () { cat = c.id; idx = 0; revealed = false; list = filtered(); buildChips(); render(); };
+          el.appendChild(b);
+        });
+      }
+
+      function render() {
+        var cur = list[idx];
+        document.getElementById("sub").textContent =
+          list.length + " questions · à lire à voix haute, réponse à révéler d'un tap";
+        document.getElementById("counter").textContent =
+          "Question " + (idx + 1) + " / " + list.length;
+        document.getElementById("q").textContent = cur.q;
+        document.getElementById("answerBox").innerHTML = revealed
+          ? '<div class="answer"><span class="lbl">Réponse</span>' + cur.a + "</div>"
+          : '<button class="reveal" onclick="reveal()">👀 Voir la réponse</button>';
+      }
+
+      function reveal() { revealed = true; render(); }
+      function next() { revealed = false; idx = (idx + 1) % list.length; render(); }
+      function prev() { revealed = false; idx = (idx - 1 + list.length) % list.length; render(); }
+      function reshuffle() { revealed = false; idx = 0; list = shuffle(filtered()); render(); }
+
+      list = filtered();
+      buildChips();
+      render();
+    </script>
+  </body>
+</html>
